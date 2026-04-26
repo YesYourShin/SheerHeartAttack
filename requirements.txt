@@ -1,0 +1,9 @@
+pywin32
+Pillow
+pure-python-adb
+PyAutoGUI
+opencv-python
+numpy
+PySide6
+NodeGraphQt
+pyinstaller

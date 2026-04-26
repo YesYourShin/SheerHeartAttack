@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Editor
+.vscode/
+.idea/
+
+# Project specific (Runtime data)
+state.json
+state.json.tmp
+*.log
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Daily records
+daily_records/
+
+macros/
+script/
