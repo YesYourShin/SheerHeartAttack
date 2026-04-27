@@ -128,9 +128,11 @@ class NodeEditorWindow(QtWidgets.QMainWindow):
         self.adb_toolbar.apply_requested.connect(self._apply_graph_changes)
 
         # ─── 상태바 ───
-        self.statusBar().showMessage("준비 완료  |  Tab: 노드 검색  |  우클릭: Add Node  |  F5: 실행  |  F6: 정지")
+        self.status_text_label = QtWidgets.QLabel("")
+        self.statusBar().addWidget(self.status_text_label, 1)
         self.zoom_status_label = QtWidgets.QLabel("배율: 100%")
         self.statusBar().addPermanentWidget(self.zoom_status_label)
+        self._update_status_bar()
 
         # ─── 메뉴바 ───
         self.menu_manager = MenuManager(self, self.properties_overlay, self.log_overlay)
@@ -451,7 +453,6 @@ class NodeEditorWindow(QtWidgets.QMainWindow):
             self.menu_manager.start_action.setEnabled(can_start)
 
     def _notify_shortcut_blocked(self, message, timeout_ms=2500):
-        self.statusBar().showMessage(message, timeout_ms)
         self._append_log(f"ℹ {message}")
 
     def _undo_graph_action(self):
@@ -866,6 +867,12 @@ class NodeEditorWindow(QtWidgets.QMainWindow):
     def _make_add_node_func(self, node_cls):
         """노드 생성 함수를 클로저로 반환 (컨텍스트 메뉴용)"""
         def _add_node(graph):
+            if node_cls.type_ == 'macro.nodes.StartNode':
+                has_start = any(n.type_ == 'macro.nodes.StartNode' for n in self.graph.all_nodes())
+                if has_start:
+                    self._append_log("ℹ Start 노드는 하나만 생성할 수 있습니다.")
+                    return
+
             viewer = graph.viewer()
             scene_pos = self._graph_context_scene_pos
             if scene_pos is None:
@@ -935,7 +942,7 @@ class NodeEditorWindow(QtWidgets.QMainWindow):
             return
         self.node_default_settings = NodeDefaultsDialog.normalize_defaults(dialog.get_values())
         self._save_node_default_settings()
-        self.statusBar().showMessage("노드 기본값 설정이 저장되었습니다.", 3000)
+        self._append_log("ℹ 노드 기본값 설정이 저장되었습니다.")
 
     def _resolve_overlap(self, new_node):
         """새 노드가 기존 노드와 겹치면 아래로 밀어서 빈 자리를 찾는다."""
@@ -1025,7 +1032,7 @@ class NodeEditorWindow(QtWidgets.QMainWindow):
         if node_out and node_out.type_ == 'macro.nodes.StartNode':
             if node_in and node_in.type_ != 'macro.nodes.GameNode':
                 QtCore.QTimer.singleShot(0, lambda: port_out.disconnect_from(port_in))
-                self.statusBar().showMessage("❌ Start 노드에는 Game 노드만 연결할 수 있습니다.", 3000)
+                self._append_log("❌ Start 노드에는 Game 노드만 연결할 수 있습니다.")
                 orig_color = node_in.color()
                 self._set_node_color_runtime(node_in, 255, 50, 50)
                 QtCore.QTimer.singleShot(500, lambda: self._set_node_color_runtime(node_in, *orig_color))
@@ -1034,7 +1041,7 @@ class NodeEditorWindow(QtWidgets.QMainWindow):
         if node_out and node_out.type_ == 'macro.nodes.GameNode':
             if node_in and node_in.type_ not in ['macro.nodes.PlanNode', 'macro.nodes.GuardNode']:
                 QtCore.QTimer.singleShot(0, lambda: port_out.disconnect_from(port_in))
-                self.statusBar().showMessage("❌ Game 노드에는 Plan 또는 Guard만 연결할 수 있습니다.", 3000)
+                self._append_log("❌ Game 노드에는 Plan 또는 Guard만 연결할 수 있습니다.")
                 orig_color = node_in.color()
                 self._set_node_color_runtime(node_in, 255, 50, 50)
                 QtCore.QTimer.singleShot(500, lambda: self._set_node_color_runtime(node_in, *orig_color))
@@ -1043,7 +1050,7 @@ class NodeEditorWindow(QtWidgets.QMainWindow):
         if node_in and node_in.type_ == 'macro.nodes.PlanNode':
             if node_out and node_out.type_ != 'macro.nodes.GameNode':
                 QtCore.QTimer.singleShot(0, lambda: port_out.disconnect_from(port_in))
-                self.statusBar().showMessage("❌ Plan 입력은 Game 노드에서만 연결할 수 있습니다.", 3000)
+                self._append_log("❌ Plan 입력은 Game 노드에서만 연결할 수 있습니다.")
                 orig_color = node_out.color()
                 self._set_node_color_runtime(node_out, 255, 50, 50)
                 QtCore.QTimer.singleShot(500, lambda: self._set_node_color_runtime(node_out, *orig_color))
@@ -1053,7 +1060,7 @@ class NodeEditorWindow(QtWidgets.QMainWindow):
         if node_out and node_out.type_ == 'macro.nodes.PlanNode':
             if node_in and node_in.type_ not in ['macro.nodes.RuleNode', 'macro.nodes.GuardNode']:
                 QtCore.QTimer.singleShot(0, lambda: port_out.disconnect_from(port_in))
-                self.statusBar().showMessage("❌ Plan 노드에는 Rule 노드 또는 Guard 노드만 연결할 수 있습니다.", 3000)
+                self._append_log("❌ Plan 노드에는 Rule 노드 또는 Guard 노드만 연결할 수 있습니다.")
                 orig_color = node_in.color()
                 self._set_node_color_runtime(node_in, 255, 50, 50)
                 QtCore.QTimer.singleShot(500, lambda: self._set_node_color_runtime(node_in, *orig_color))
@@ -1121,7 +1128,7 @@ class NodeEditorWindow(QtWidgets.QMainWindow):
         """상태바에 현재 그래프 정보 표시"""
         nodes = self.graph.all_nodes()
         node_count = len(nodes)
-        self.statusBar().showMessage(
+        self.status_text_label.setText(
             f"노드: {node_count}개  |  Tab: 노드 검색  |  우클릭: Add Node  |  F5: 실행  |  F6: 정지"
         )
         
@@ -1302,7 +1309,7 @@ class NodeEditorWindow(QtWidgets.QMainWindow):
         self._sync_start_controls()
             
         self._set_editing_enabled(False)
-        self.statusBar().showMessage("▶ 매크로 실행 중...")
+        self._append_log("▶ 매크로 실행 중...")
         print("═══ 매크로 실행 시작 ═══")
         self.macro_thread.start()
 
