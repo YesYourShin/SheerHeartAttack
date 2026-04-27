@@ -188,6 +188,7 @@ class NodeEditorWindow(QtWidgets.QMainWindow):
         self._middle_descendant_undo_macro_open = False
         self._middle_pan_active = False
         self._middle_pan_prev_pos = QtCore.QPoint()
+        self.graph.viewer().installEventFilter(self)
         self.graph.viewer().viewport().installEventFilter(self)
         self._setup_inactive_visuals()
 
@@ -754,6 +755,11 @@ class NodeEditorWindow(QtWidgets.QMainWindow):
 
     def eventFilter(self, obj, event):
         """ADB 미연결 상태일 때 우클릭 드래그 및 조작 완전 격리"""
+        if hasattr(self, 'graph') and obj is self.graph.viewer():
+            if event.type() in (QtCore.QEvent.KeyPress, QtCore.QEvent.KeyRelease):
+                if event.key() == QtCore.Qt.Key_Tab:
+                    return True
+
         if hasattr(self, 'graph_container') and obj is self.graph_container:
             if event.type() == QtCore.QEvent.Resize:
                 QtCore.QTimer.singleShot(0, self._update_overlay_geometry)
@@ -1129,7 +1135,7 @@ class NodeEditorWindow(QtWidgets.QMainWindow):
         nodes = self.graph.all_nodes()
         node_count = len(nodes)
         self.status_text_label.setText(
-            f"노드: {node_count}개  |  Tab: 노드 검색  |  우클릭: Add Node  |  F5: 실행  |  F6: 정지"
+            f"노드: {node_count}개  |  우클릭: Add Node  |  F5: 실행  |  F6: 정지"
         )
         
     def _highlight_node(self, node_id):
