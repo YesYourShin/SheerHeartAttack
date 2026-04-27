@@ -201,6 +201,13 @@ Plan Guard
 Plan Rule
 ```
 
+코드 기준 동작 요약:
+
+- Guard 실행 여부는 노드의 **연결 상태 + 실행 순서 설정**으로 결정됩니다.
+- Game에 연결된 Guard는 해당 Game 사이클에서 먼저 검사됩니다.
+- Plan에 연결된 Guard는 해당 Plan의 Rule 검사 전에 먼저 검사됩니다.
+- Rule 체인 실행 중에도 Guard 재검사가 수행됩니다.
+
 ### 전체 게임 루틴 반복
 
 Start에 Game을 여러 개 연결하면 순서대로 반복됩니다.

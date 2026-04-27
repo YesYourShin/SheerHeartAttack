@@ -1072,6 +1072,16 @@ class NodeEditorWindow(QtWidgets.QMainWindow):
                 QtCore.QTimer.singleShot(500, lambda: self._set_node_color_runtime(node_in, *orig_color))
                 return
 
+        # 日本語: Rule から Guard への直接接続は禁止（Guard は Game/Plan 配下のみ有効）。
+        if node_out and node_out.type_ == 'macro.nodes.RuleNode':
+            if node_in and node_in.type_ == 'macro.nodes.GuardNode':
+                QtCore.QTimer.singleShot(0, lambda: port_out.disconnect_from(port_in))
+                self._append_log("❌ Rule 노드에서 Guard 노드로는 연결할 수 없습니다.")
+                orig_color = node_in.color()
+                self._set_node_color_runtime(node_in, 255, 50, 50)
+                QtCore.QTimer.singleShot(500, lambda: self._set_node_color_runtime(node_in, *orig_color))
+                return
+
         self._refresh_current_panel_connections(node_out, node_in)
 
     def _on_port_disconnected(self, port_in, port_out):
